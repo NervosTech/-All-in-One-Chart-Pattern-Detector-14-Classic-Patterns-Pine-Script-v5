@@ -2,7 +2,9 @@
 indicator("Smart Pattern Detector MTF (with Targets & Zones)", overlay=true)
 
 // === Timeframe-aware Pivot Strength ===
-pivotLen = input.int(timeframe.isdaily ? 15 : timeframe.isintraday and timeframe.multiplier >= 240 ? 12 : timeframe.isintraday and timeframe.multiplier >= 60 ? 8 : 5, title="Pivot Strength")
+pivotTF = timeframe.isdaily ? 15 : timeframe.isintraday and timeframe.multiplier >= 240 ? 12 : timeframe.isintraday and timeframe.multiplier >= 60 ? 8 : 5
+pivotLen = input.int(5, title="Pivot Strength (Default 5)")
+pivotLen := pivotTF
 
 thresh = input.float(0.01, "Pattern Match Threshold", minval=0.001)
 projectionBars = input.int(20, "Target Projection Length", minval=5)

@@ -1,10 +1,9 @@
 //@version=5
-indicator("All Chart Patterns Detector with Graphics", overlay=true)
+indicator("All Chart Patterns Detector - Full Suite", overlay=true)
 
 // === Input Settings ===
 pivotLen = input.int(5, title="Pivot Strength", minval=1)
 thresh = input.float(0.01, title="Pattern Match Threshold", minval=0.001)
-showTargets = input.bool(true, title="Show Target Lines")
 
 // === Helper Pivots ===
 ph = ta.pivothigh(high, pivotLen, pivotLen)
@@ -23,10 +22,7 @@ plotshape(doubleTop, title="Double Top", location=location.abovebar, style=shape
 plotshape(doubleBottom, title="Double Bottom", location=location.belowbar, style=shape.triangleup, color=color.green)
 
 // === Triple Top/Bottom ===
-var float top1 = na
-var float top2 = na
-var float bot1 = na
-var float bot2 = na
+var float top1 = na, top2 = na, bot1 = na, bot2 = na
 if not na(ph)
     top2 := top1
     top1 := ph
@@ -51,7 +47,33 @@ invRight = ta.pivotlow(low, pivotLen + 12, pivotLen + 12)
 invHNS = not na(invLeft) and not na(invHead) and not na(invRight) and invHead < invLeft and invHead < invRight
 plotshape(invHNS, title="Inverse H&S", location=location.belowbar, style=shape.labelup, text="Inv H&S", color=color.teal)
 
-// === Falling Wedge with Lines and Target ===
+// === Rectangle (Sideways Range) ===
+boxHigh = ta.highest(high, pivotLen * 3)
+boxLow = ta.lowest(low, pivotLen * 3)
+rangeTight = (boxHigh - boxLow) / boxHigh < 0.02
+plotshape(rangeTight, title="Rectangle", location=location.top, style=shape.labeldown, text="Box", color=color.gray)
+
+// === Bullish Flag ===
+flagStart = ta.valuewhen(close > ta.sma(close, 20), close, 2)
+flagMid = ta.valuewhen(close < ta.sma(close, 20), close, 1)
+bullFlag = flagStart < flagMid and flagMid > close and close > ta.sma(close, 20)
+plotshape(bullFlag, title="Bullish Flag", location=location.belowbar, style=shape.flag, color=color.green)
+
+// === Bearish Flag ===
+bearFlagStart = ta.valuewhen(close < ta.sma(close, 20), close, 2)
+bearFlagMid = ta.valuewhen(close > ta.sma(close, 20), close, 1)
+bearFlag = bearFlagStart > bearFlagMid and bearFlagMid < close and close < ta.sma(close, 20)
+plotshape(bearFlag, title="Bearish Flag", location=location.abovebar, style=shape.flag, color=color.red)
+
+// === Bullish/Bearish Pennants ===
+bullImpulse = close > ta.sma(close, 20) and close > close[1]*1.01
+bearImpulse = close < ta.sma(close, 20) and close < close[1]*0.99
+bullPennant = rangeTight and bullImpulse
+bearPennant = rangeTight and bearImpulse
+plotshape(bullPennant, title="Bullish Pennant", location=location.belowbar, style=shape.labelup, text="Pennant", color=color.green)
+plotshape(bearPennant, title="Bearish Pennant", location=location.abovebar, style=shape.labeldown, text="Pennant", color=color.red)
+
+// === Falling Wedge ===
 var float fwHigh1 = na, fwHigh2 = na, fwLow1 = na, fwLow2 = na
 var int fwHigh1Bar = na, fwHigh2Bar = na, fwLow1Bar = na, fwLow2Bar = na
 if not na(ph)
@@ -68,28 +90,43 @@ fwValid = not na(fwHigh2) and not na(fwLow2) and fwHigh2 < fwHigh1 and fwLow2 < 
 if fwValid
     line.new(fwHigh2Bar, fwHigh2, fwHigh1Bar, fwHigh1, color=color.lime, width=2)
     line.new(fwLow2Bar, fwLow2, fwLow1Bar, fwLow1, color=color.lime, width=2)
-    box.new(left=fwHigh2Bar, top=fwHigh2, right=fwLow1Bar, bottom=fwLow1, border_color=color.green, bgcolor=color.new(color.green, 90))
     label.new(bar_index, fwHigh1, "Falling Wedge", style=label.style_label_down, color=color.green, textcolor=color.white)
-    line.new(bar_index, fwLow1, bar_index + 20, fwLow1 + (fwHigh2 - fwLow1), color=color.green, style=line.style_dashed, width=1)
 
-// === Rectangle Box (Sideways Range Logic) ===
-boxHigh = ta.highest(high, pivotLen * 3)
-boxLow = ta.lowest(low, pivotLen * 3)
-rangeTight = (boxHigh - boxLow) / boxHigh < 0.02
-plotshape(rangeTight, title="Rectangle Range", location=location.top, style=shape.labeldown, text="Box", color=color.gray)
+// === Rising Wedge ===
+var float rwHigh1 = na, rwHigh2 = na, rwLow1 = na, rwLow2 = na
+var int rwHigh1Bar = na, rwHigh2Bar = na, rwLow1Bar = na, rwLow2Bar = na
+if not na(ph)
+    rwHigh2 := rwHigh1
+    rwHigh2Bar := rwHigh1Bar
+    rwHigh1 := ph
+    rwHigh1Bar := bar_index - pivotLen
+if not na(pl)
+    rwLow2 := rwLow1
+    rwLow2Bar := rwLow1Bar
+    rwLow1 := pl
+    rwLow1Bar := bar_index - pivotLen
+rwValid = not na(rwHigh2) and not na(rwLow2) and rwHigh2 > rwHigh1 and rwLow2 > rwLow1
+if rwValid
+    line.new(rwHigh2Bar, rwHigh2, rwHigh1Bar, rwHigh1, color=color.red, width=2)
+    line.new(rwLow2Bar, rwLow2, rwLow1Bar, rwLow1, color=color.red, width=2)
+    label.new(bar_index, rwLow1, "Rising Wedge", style=label.style_label_up, color=color.red, textcolor=color.white)
 
-// === Bullish Flag (Simple Detection) ===
-flagStart = ta.valuewhen(close > ta.sma(close, 20), close, 2)
-flagMid = ta.valuewhen(close < ta.sma(close, 20), close, 1)
-flagEnd = close
-bullFlag = flagStart < flagMid and flagMid > flagEnd and close > ta.sma(close, 20)
-plotshape(bullFlag, title="Bullish Flag", location=location.belowbar, style=shape.flag, color=color.green)
+// === Triangle (Symmetrical) ===
+symTriangle = not na(fwHigh2) and not na(fwLow2) and fwHigh2 > fwHigh1 and fwLow2 < fwLow1
+plotshape(symTriangle, title="Symmetrical Triangle", location=location.abovebar, style=shape.labeldown, text="Triangle", color=color.purple)
 
 // === Alerts ===
 alertcondition(doubleTop, title="Double Top Alert", message="Double Top pattern detected")
 alertcondition(doubleBottom, title="Double Bottom Alert", message="Double Bottom pattern detected")
-alertcondition(hns, title="H&S Alert", message="Head and Shoulders detected")
-alertcondition(invHNS, title="Inverse H&S Alert", message="Inverse Head and Shoulders detected")
-alertcondition(bullFlag, title="Bullish Flag Alert", message="Bullish Flag detected")
-alertcondition(fwValid, title="Falling Wedge Alert", message="Falling Wedge detected")
-alertcondition(rangeTight, title="Rectangle Range Alert", message="Rectangle Range detected")
+alertcondition(top3, title="Triple Top Alert", message="Triple Top pattern detected")
+alertcondition(bot3, title="Triple Bottom Alert", message="Triple Bottom pattern detected")
+alertcondition(hns, title="Head & Shoulders Alert", message="Head & Shoulders detected")
+alertcondition(invHNS, title="Inverse H&S Alert", message="Inverse Head & Shoulders detected")
+alertcondition(bullFlag, title="Bullish Flag Alert", message="Bullish Flag pattern detected")
+alertcondition(bearFlag, title="Bearish Flag Alert", message="Bearish Flag pattern detected")
+alertcondition(bullPennant, title="Bullish Pennant Alert", message="Bullish Pennant pattern detected")
+alertcondition(bearPennant, title="Bearish Pennant Alert", message="Bearish Pennant pattern detected")
+alertcondition(fwValid, title="Falling Wedge Alert", message="Falling Wedge pattern detected")
+alertcondition(rwValid, title="Rising Wedge Alert", message="Rising Wedge pattern detected")
+alertcondition(rangeTight, title="Rectangle Range Alert", message="Rectangle pattern detected")
+alertcondition(symTriangle, title="Triangle Alert", message="Symmetrical Triangle pattern detected")

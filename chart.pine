@@ -1,0 +1,95 @@
+//@version=5
+indicator("All Chart Patterns Detector with Graphics", overlay=true)
+
+// === Input Settings ===
+pivotLen = input.int(5, title="Pivot Strength", minval=1)
+thresh = input.float(0.01, title="Pattern Match Threshold", minval=0.001)
+showTargets = input.bool(true, title="Show Target Lines")
+
+// === Helper Pivots ===
+ph = ta.pivothigh(high, pivotLen, pivotLen)
+pl = ta.pivotlow(low, pivotLen, pivotLen)
+
+// === Double Top/Bottom ===
+var float lastTop = na
+var float lastBottom = na
+if not na(ph)
+    lastTop := ph
+if not na(pl)
+    lastBottom := pl
+doubleTop = not na(ph) and not na(lastTop) and math.abs(ph - lastTop)/lastTop < thresh
+doubleBottom = not na(pl) and not na(lastBottom) and math.abs(pl - lastBottom)/lastBottom < thresh
+plotshape(doubleTop, title="Double Top", location=location.abovebar, style=shape.triangledown, color=color.red)
+plotshape(doubleBottom, title="Double Bottom", location=location.belowbar, style=shape.triangleup, color=color.green)
+
+// === Triple Top/Bottom ===
+var float top1 = na
+var float top2 = na
+var float bot1 = na
+var float bot2 = na
+if not na(ph)
+    top2 := top1
+    top1 := ph
+if not na(pl)
+    bot2 := bot1
+    bot1 := pl
+top3 = not na(ph) and not na(top1) and not na(top2) and math.abs(ph - top1)/top1 < thresh and math.abs(ph - top2)/top2 < thresh
+bot3 = not na(pl) and not na(bot1) and not na(bot2) and math.abs(pl - bot1)/bot1 < thresh and math.abs(pl - bot2)/bot2 < thresh
+plotshape(top3, title="Triple Top", location=location.abovebar, style=shape.triangledown, color=color.red, size=size.small)
+plotshape(bot3, title="Triple Bottom", location=location.belowbar, style=shape.triangleup, color=color.green, size=size.small)
+
+// === Head and Shoulders ===
+leftS = ta.pivothigh(high, pivotLen + 4, pivotLen + 4)
+head = ta.pivothigh(high, pivotLen + 8, pivotLen + 8)
+rightS = ta.pivothigh(high, pivotLen + 12, pivotLen + 12)
+hns = not na(leftS) and not na(head) and not na(rightS) and head > leftS and head > rightS
+plotshape(hns, title="Head & Shoulders", location=location.abovebar, style=shape.labeldown, text="H&S", color=color.orange)
+
+invLeft = ta.pivotlow(low, pivotLen + 4, pivotLen + 4)
+invHead = ta.pivotlow(low, pivotLen + 8, pivotLen + 8)
+invRight = ta.pivotlow(low, pivotLen + 12, pivotLen + 12)
+invHNS = not na(invLeft) and not na(invHead) and not na(invRight) and invHead < invLeft and invHead < invRight
+plotshape(invHNS, title="Inverse H&S", location=location.belowbar, style=shape.labelup, text="Inv H&S", color=color.teal)
+
+// === Falling Wedge with Lines and Target ===
+var float fwHigh1 = na, fwHigh2 = na, fwLow1 = na, fwLow2 = na
+var int fwHigh1Bar = na, fwHigh2Bar = na, fwLow1Bar = na, fwLow2Bar = na
+if not na(ph)
+    fwHigh2 := fwHigh1
+    fwHigh2Bar := fwHigh1Bar
+    fwHigh1 := ph
+    fwHigh1Bar := bar_index - pivotLen
+if not na(pl)
+    fwLow2 := fwLow1
+    fwLow2Bar := fwLow1Bar
+    fwLow1 := pl
+    fwLow1Bar := bar_index - pivotLen
+fwValid = not na(fwHigh2) and not na(fwLow2) and fwHigh2 < fwHigh1 and fwLow2 < fwLow1
+if fwValid
+    line.new(fwHigh2Bar, fwHigh2, fwHigh1Bar, fwHigh1, color=color.lime, width=2)
+    line.new(fwLow2Bar, fwLow2, fwLow1Bar, fwLow1, color=color.lime, width=2)
+    box.new(left=fwHigh2Bar, top=fwHigh2, right=fwLow1Bar, bottom=fwLow1, border_color=color.green, bgcolor=color.new(color.green, 90))
+    label.new(bar_index, fwHigh1, "Falling Wedge", style=label.style_label_down, color=color.green, textcolor=color.white)
+    line.new(bar_index, fwLow1, bar_index + 20, fwLow1 + (fwHigh2 - fwLow1), color=color.green, style=line.style_dashed, width=1)
+
+// === Rectangle Box (Sideways Range Logic) ===
+boxHigh = ta.highest(high, pivotLen * 3)
+boxLow = ta.lowest(low, pivotLen * 3)
+rangeTight = (boxHigh - boxLow) / boxHigh < 0.02
+plotshape(rangeTight, title="Rectangle Range", location=location.top, style=shape.labeldown, text="Box", color=color.gray)
+
+// === Bullish Flag (Simple Detection) ===
+flagStart = ta.valuewhen(close > ta.sma(close, 20), close, 2)
+flagMid = ta.valuewhen(close < ta.sma(close, 20), close, 1)
+flagEnd = close
+bullFlag = flagStart < flagMid and flagMid > flagEnd and close > ta.sma(close, 20)
+plotshape(bullFlag, title="Bullish Flag", location=location.belowbar, style=shape.flag, color=color.green)
+
+// === Alerts ===
+alertcondition(doubleTop, title="Double Top Alert", message="Double Top pattern detected")
+alertcondition(doubleBottom, title="Double Bottom Alert", message="Double Bottom pattern detected")
+alertcondition(hns, title="H&S Alert", message="Head and Shoulders detected")
+alertcondition(invHNS, title="Inverse H&S Alert", message="Inverse Head and Shoulders detected")
+alertcondition(bullFlag, title="Bullish Flag Alert", message="Bullish Flag detected")
+alertcondition(fwValid, title="Falling Wedge Alert", message="Falling Wedge detected")
+alertcondition(rangeTight, title="Rectangle Range Alert", message="Rectangle Range detected")

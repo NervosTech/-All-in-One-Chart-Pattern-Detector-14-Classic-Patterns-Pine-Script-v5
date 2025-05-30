@@ -9,9 +9,33 @@ thresh = input.float(0.01, title="Pattern Match Threshold", minval=0.001)
 ph = ta.pivothigh(high, pivotLen, pivotLen)
 pl = ta.pivotlow(low, pivotLen, pivotLen)
 
-// === Double Top/Bottom ===
+// === Variable Declarations with Type Fix ===
 var float lastTop = na
 var float lastBottom = na
+var float top1 = na
+var float top2 = na
+var float bot1 = na
+var float bot2 = na
+
+var float fwHigh1 = na
+var float fwHigh2 = na
+var float fwLow1 = na
+var float fwLow2 = na
+var int fwHigh1Bar = na
+var int fwHigh2Bar = na
+var int fwLow1Bar = na
+var int fwLow2Bar = na
+
+var float rwHigh1 = na
+var float rwHigh2 = na
+var float rwLow1 = na
+var float rwLow2 = na
+var int rwHigh1Bar = na
+var int rwHigh2Bar = na
+var int rwLow1Bar = na
+var int rwLow2Bar = na
+
+// === Double Top/Bottom ===
 if not na(ph)
     lastTop := ph
 if not na(pl)
@@ -22,7 +46,6 @@ plotshape(doubleTop, title="Double Top", location=location.abovebar, style=shape
 plotshape(doubleBottom, title="Double Bottom", location=location.belowbar, style=shape.triangleup, color=color.green)
 
 // === Triple Top/Bottom ===
-var float top1 = na, top2 = na, bot1 = na, bot2 = na
 if not na(ph)
     top2 := top1
     top1 := ph
@@ -74,8 +97,6 @@ plotshape(bullPennant, title="Bullish Pennant", location=location.belowbar, styl
 plotshape(bearPennant, title="Bearish Pennant", location=location.abovebar, style=shape.labeldown, text="Pennant", color=color.red)
 
 // === Falling Wedge ===
-var float fwHigh1 = na, fwHigh2 = na, fwLow1 = na, fwLow2 = na
-var int fwHigh1Bar = na, fwHigh2Bar = na, fwLow1Bar = na, fwLow2Bar = na
 if not na(ph)
     fwHigh2 := fwHigh1
     fwHigh2Bar := fwHigh1Bar
@@ -93,8 +114,6 @@ if fwValid
     label.new(bar_index, fwHigh1, "Falling Wedge", style=label.style_label_down, color=color.green, textcolor=color.white)
 
 // === Rising Wedge ===
-var float rwHigh1 = na, rwHigh2 = na, rwLow1 = na, rwLow2 = na
-var int rwHigh1Bar = na, rwHigh2Bar = na, rwLow1Bar = na, rwLow2Bar = na
 if not na(ph)
     rwHigh2 := rwHigh1
     rwHigh2Bar := rwHigh1Bar

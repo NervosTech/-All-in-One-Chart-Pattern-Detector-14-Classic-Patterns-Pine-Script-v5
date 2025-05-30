@@ -1,22 +1,50 @@
 //@version=5
-indicator("All Chart Patterns Detector - Full Suite", overlay=true)
+indicator("All Chart Patterns Detector with Fills & Targets", overlay=true)
 
 // === Input Settings ===
 pivotLen = input.int(5, title="Pivot Strength", minval=1)
 thresh = input.float(0.01, title="Pattern Match Threshold", minval=0.001)
+projectionBars = input.int(20, title="Target Projection Length", minval=5)
 
-// === Helper Pivots ===
+// === Pivots ===
 ph = ta.pivothigh(high, pivotLen, pivotLen)
 pl = ta.pivotlow(low, pivotLen, pivotLen)
 
-// === Variable Declarations with Type Fix ===
-var float lastTop = na
-var float lastBottom = na
-var float top1 = na
-var float top2 = na
-var float bot1 = na
-var float bot2 = na
+// === H&S Pattern with Target ===
+leftS = ta.pivothigh(high, pivotLen + 4, pivotLen + 4)
+head = ta.pivothigh(high, pivotLen + 8, pivotLen + 8)
+rightS = ta.pivothigh(high, pivotLen + 12, pivotLen + 12)
 
+neckline = (leftS + rightS) / 2
+hns = not na(leftS) and not na(head) and not na(rightS) and head > leftS and head > rightS
+
+if hns
+    target = neckline - (head - neckline)
+    line.new(x1=bar_index, y1=neckline, x2=bar_index + projectionBars, y2=target, style=line.style_dotted, color=color.red, width=2)
+    label.new(x=bar_index + projectionBars, y=target, text="Target", style=label.style_label_down, color=color.red, textcolor=color.white)
+    label.new(bar_index - 12, leftS, "Left Shoulder", style=label.style_label_down, color=color.red, textcolor=color.white)
+    label.new(bar_index - 4, head, "Head", style=label.style_label_down, color=color.red, textcolor=color.white)
+    label.new(bar_index, rightS, "Right Shoulder", style=label.style_label_down, color=color.red, textcolor=color.white)
+    box.new(left=bar_index - 12, right=bar_index + 2, top=leftS, bottom=rightS, bgcolor=color.new(color.red, 90), border_color=color.red)
+
+// === Inverse H&S ===
+invLeft = ta.pivotlow(low, pivotLen + 4, pivotLen + 4)
+invHead = ta.pivotlow(low, pivotLen + 8, pivotLen + 8)
+invRight = ta.pivotlow(low, pivotLen + 12, pivotLen + 12)
+
+invNeckline = (invLeft + invRight) / 2
+invHNS = not na(invLeft) and not na(invHead) and not na(invRight) and invHead < invLeft and invHead < invRight
+
+if invHNS
+    target = invNeckline + (invNeckline - invHead)
+    line.new(x1=bar_index, y1=invNeckline, x2=bar_index + projectionBars, y2=target, style=line.style_dotted, color=color.green, width=2)
+    label.new(x=bar_index + projectionBars, y=target, text="Target", style=label.style_label_up, color=color.green, textcolor=color.white)
+    label.new(bar_index - 12, invLeft, "Left Shoulder", style=label.style_label_up, color=color.green, textcolor=color.white)
+    label.new(bar_index - 4, invHead, "Head", style=label.style_label_up, color=color.green, textcolor=color.white)
+    label.new(bar_index, invRight, "Right Shoulder", style=label.style_label_up, color=color.green, textcolor=color.white)
+    box.new(left=bar_index - 12, right=bar_index + 2, top=invRight, bottom=invLeft, bgcolor=color.new(color.green, 90), border_color=color.green)
+
+// === Falling Wedge with Target ===
 var float fwHigh1 = na
 var float fwHigh2 = na
 var float fwLow1 = na
@@ -26,126 +54,56 @@ var int fwHigh2Bar = na
 var int fwLow1Bar = na
 var int fwLow2Bar = na
 
-var float rwHigh1 = na
-var float rwHigh2 = na
-var float rwLow1 = na
-var float rwLow2 = na
-var int rwHigh1Bar = na
-var int rwHigh2Bar = na
-var int rwLow1Bar = na
-var int rwLow2Bar = na
-
-// === Double Top/Bottom ===
-if not na(ph)
-    lastTop := ph
-if not na(pl)
-    lastBottom := pl
-doubleTop = not na(ph) and not na(lastTop) and math.abs(ph - lastTop)/lastTop < thresh
-doubleBottom = not na(pl) and not na(lastBottom) and math.abs(pl - lastBottom)/lastBottom < thresh
-plotshape(doubleTop, title="Double Top", location=location.abovebar, style=shape.triangledown, color=color.red)
-plotshape(doubleBottom, title="Double Bottom", location=location.belowbar, style=shape.triangleup, color=color.green)
-
-// === Triple Top/Bottom ===
-if not na(ph)
-    top2 := top1
-    top1 := ph
-if not na(pl)
-    bot2 := bot1
-    bot1 := pl
-top3 = not na(ph) and not na(top1) and not na(top2) and math.abs(ph - top1)/top1 < thresh and math.abs(ph - top2)/top2 < thresh
-bot3 = not na(pl) and not na(bot1) and not na(bot2) and math.abs(pl - bot1)/bot1 < thresh and math.abs(pl - bot2)/bot2 < thresh
-plotshape(top3, title="Triple Top", location=location.abovebar, style=shape.triangledown, color=color.red, size=size.small)
-plotshape(bot3, title="Triple Bottom", location=location.belowbar, style=shape.triangleup, color=color.green, size=size.small)
-
-// === Head and Shoulders ===
-leftS = ta.pivothigh(high, pivotLen + 4, pivotLen + 4)
-head = ta.pivothigh(high, pivotLen + 8, pivotLen + 8)
-rightS = ta.pivothigh(high, pivotLen + 12, pivotLen + 12)
-hns = not na(leftS) and not na(head) and not na(rightS) and head > leftS and head > rightS
-plotshape(hns, title="Head & Shoulders", location=location.abovebar, style=shape.labeldown, text="H&S", color=color.orange)
-
-invLeft = ta.pivotlow(low, pivotLen + 4, pivotLen + 4)
-invHead = ta.pivotlow(low, pivotLen + 8, pivotLen + 8)
-invRight = ta.pivotlow(low, pivotLen + 12, pivotLen + 12)
-invHNS = not na(invLeft) and not na(invHead) and not na(invRight) and invHead < invLeft and invHead < invRight
-plotshape(invHNS, title="Inverse H&S", location=location.belowbar, style=shape.labelup, text="Inv H&S", color=color.teal)
-
-// === Rectangle (Sideways Range) ===
-boxHigh = ta.highest(high, pivotLen * 3)
-boxLow = ta.lowest(low, pivotLen * 3)
-rangeTight = (boxHigh - boxLow) / boxHigh < 0.02
-plotshape(rangeTight, title="Rectangle", location=location.top, style=shape.labeldown, text="Box", color=color.gray)
-
-// === Bullish Flag ===
-flagStart = ta.valuewhen(close > ta.sma(close, 20), close, 2)
-flagMid = ta.valuewhen(close < ta.sma(close, 20), close, 1)
-bullFlag = flagStart < flagMid and flagMid > close and close > ta.sma(close, 20)
-plotshape(bullFlag, title="Bullish Flag", location=location.belowbar, style=shape.flag, color=color.green)
-
-// === Bearish Flag ===
-bearFlagStart = ta.valuewhen(close < ta.sma(close, 20), close, 2)
-bearFlagMid = ta.valuewhen(close > ta.sma(close, 20), close, 1)
-bearFlag = bearFlagStart > bearFlagMid and bearFlagMid < close and close < ta.sma(close, 20)
-plotshape(bearFlag, title="Bearish Flag", location=location.abovebar, style=shape.flag, color=color.red)
-
-// === Bullish/Bearish Pennants ===
-bullImpulse = close > ta.sma(close, 20) and close > close[1]*1.01
-bearImpulse = close < ta.sma(close, 20) and close < close[1]*0.99
-bullPennant = rangeTight and bullImpulse
-bearPennant = rangeTight and bearImpulse
-plotshape(bullPennant, title="Bullish Pennant", location=location.belowbar, style=shape.labelup, text="Pennant", color=color.green)
-plotshape(bearPennant, title="Bearish Pennant", location=location.abovebar, style=shape.labeldown, text="Pennant", color=color.red)
-
-// === Falling Wedge ===
 if not na(ph)
     fwHigh2 := fwHigh1
     fwHigh2Bar := fwHigh1Bar
     fwHigh1 := ph
     fwHigh1Bar := bar_index - pivotLen
+
 if not na(pl)
     fwLow2 := fwLow1
     fwLow2Bar := fwLow1Bar
     fwLow1 := pl
     fwLow1Bar := bar_index - pivotLen
+
 fwValid = not na(fwHigh2) and not na(fwLow2) and fwHigh2 < fwHigh1 and fwLow2 < fwLow1
+
 if fwValid
-    line.new(fwHigh2Bar, fwHigh2, fwHigh1Bar, fwHigh1, color=color.lime, width=2)
-    line.new(fwLow2Bar, fwLow2, fwLow1Bar, fwLow1, color=color.lime, width=2)
+    // Pattern lines
+    line.new(fwHigh2Bar, fwHigh2, fwHigh1Bar, fwHigh1, color=color.green, width=2)
+    line.new(fwLow2Bar, fwLow2, fwLow1Bar, fwLow1, color=color.green, width=2)
+    // Fill zone
+    box.new(left=fwHigh2Bar, top=fwHigh2, right=fwLow1Bar, bottom=fwLow1, border_color=color.green, bgcolor=color.new(color.green, 90))
+    // Target
+    projTarget = fwLow1 + (fwHigh2 - fwLow1)
+    line.new(bar_index, fwLow1, bar_index + projectionBars, projTarget, color=color.green, style=line.style_dotted)
+    label.new(bar_index + projectionBars, projTarget, "Target", style=label.style_label_up, color=color.green, textcolor=color.white)
     label.new(bar_index, fwHigh1, "Falling Wedge", style=label.style_label_down, color=color.green, textcolor=color.white)
 
-// === Rising Wedge ===
-if not na(ph)
-    rwHigh2 := rwHigh1
-    rwHigh2Bar := rwHigh1Bar
-    rwHigh1 := ph
-    rwHigh1Bar := bar_index - pivotLen
+// === Double Bottom with Target ===
+var float lastBottom = na
 if not na(pl)
-    rwLow2 := rwLow1
-    rwLow2Bar := rwLow1Bar
-    rwLow1 := pl
-    rwLow1Bar := bar_index - pivotLen
-rwValid = not na(rwHigh2) and not na(rwLow2) and rwHigh2 > rwHigh1 and rwLow2 > rwLow1
-if rwValid
-    line.new(rwHigh2Bar, rwHigh2, rwHigh1Bar, rwHigh1, color=color.red, width=2)
-    line.new(rwLow2Bar, rwLow2, rwLow1Bar, rwLow1, color=color.red, width=2)
-    label.new(bar_index, rwLow1, "Rising Wedge", style=label.style_label_up, color=color.red, textcolor=color.white)
+    lastBottom := pl
+doubleBottom = not na(pl) and not na(lastBottom) and math.abs(pl - lastBottom)/lastBottom < thresh
 
-// === Triangle (Symmetrical) ===
-symTriangle = not na(fwHigh2) and not na(fwLow2) and fwHigh2 > fwHigh1 and fwLow2 < fwLow1
-plotshape(symTriangle, title="Symmetrical Triangle", location=location.abovebar, style=shape.labeldown, text="Triangle", color=color.purple)
+if doubleBottom
+    neckline = ta.highest(high, pivotLen * 2)
+    height = neckline - pl
+    projTarget = neckline + height
+    line.new(bar_index, neckline, bar_index + projectionBars, projTarget, color=color.green, style=line.style_dotted)
+    label.new(bar_index + projectionBars, projTarget, "Target", style=label.style_label_up, color=color.green, textcolor=color.white)
+    label.new(bar_index, pl, "Double Bottom", style=label.style_label_up, color=color.green, textcolor=color.white)
 
-// === Alerts ===
-alertcondition(doubleTop, title="Double Top Alert", message="Double Top pattern detected")
-alertcondition(doubleBottom, title="Double Bottom Alert", message="Double Bottom pattern detected")
-alertcondition(top3, title="Triple Top Alert", message="Triple Top pattern detected")
-alertcondition(bot3, title="Triple Bottom Alert", message="Triple Bottom pattern detected")
-alertcondition(hns, title="Head & Shoulders Alert", message="Head & Shoulders detected")
-alertcondition(invHNS, title="Inverse H&S Alert", message="Inverse Head & Shoulders detected")
-alertcondition(bullFlag, title="Bullish Flag Alert", message="Bullish Flag pattern detected")
-alertcondition(bearFlag, title="Bearish Flag Alert", message="Bearish Flag pattern detected")
-alertcondition(bullPennant, title="Bullish Pennant Alert", message="Bullish Pennant pattern detected")
-alertcondition(bearPennant, title="Bearish Pennant Alert", message="Bearish Pennant pattern detected")
-alertcondition(fwValid, title="Falling Wedge Alert", message="Falling Wedge pattern detected")
-alertcondition(rwValid, title="Rising Wedge Alert", message="Rising Wedge pattern detected")
-alertcondition(rangeTight, title="Rectangle Range Alert", message="Rectangle pattern detected")
-alertcondition(symTriangle, title="Triangle Alert", message="Symmetrical Triangle pattern detected")
+// === Double Top with Target ===
+var float lastTop = na
+if not na(ph)
+    lastTop := ph
+doubleTop = not na(ph) and not na(lastTop) and math.abs(ph - lastTop)/lastTop < thresh
+
+if doubleTop
+    neckline = ta.lowest(low, pivotLen * 2)
+    height = ph - neckline
+    projTarget = neckline - height
+    line.new(bar_index, neckline, bar_index + projectionBars, projTarget, color=color.red, style=line.style_dotted)
+    label.new(bar_index + projectionBars, projTarget, "Target", style=label.style_label_down, color=color.red, textcolor=color.white)
+    label.new(bar_index, ph, "Double Top", style=label.style_label_down, color=color.red, textcolor=color.white)
